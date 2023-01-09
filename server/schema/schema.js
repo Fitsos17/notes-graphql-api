@@ -2,7 +2,7 @@ const graphql = require("graphql");
 const _ = require("lodash");
 
 // Dummy data
-const USERS_DATA = [
+const USERS = [
   {
     id: "1",
     name: "Nick",
@@ -30,7 +30,7 @@ const USERS_DATA = [
   },
 ];
 
-const LISTS_DATA = [
+const LISTS = [
   {
     id: "1",
     name: "Shopping",
@@ -48,7 +48,7 @@ const LISTS_DATA = [
   },
   {
     id: "4",
-    name: "Gaming",
+    name: "House",
     userId: "4",
   },
   {
@@ -58,7 +58,33 @@ const LISTS_DATA = [
   },
 ];
 
-// TODO: NOTES_DATA : {id, listsId}
+const NOTES = [
+  {
+    id: "1",
+    note: "Buy a jacket",
+    listId: "1",
+  },
+  {
+    id: "2",
+    note: "Do the laundry",
+    listId: "2",
+  },
+  {
+    id: "3",
+    note: "Deploy the project",
+    listId: "3",
+  },
+  {
+    id: "4",
+    note: "Do the laundry",
+    listId: "4",
+  },
+  {
+    id: "5",
+    note: "Complete biology homework",
+    listId: "5",
+  },
+];
 
 // Types
 const UserType = new graphql.GraphQLObjectType({
@@ -71,7 +97,7 @@ const UserType = new graphql.GraphQLObjectType({
     lists: {
       type: new graphql.GraphQLList(ListType),
       resolve(parent) {
-        return _.filter(LISTS_DATA, { userId: parent.id });
+        return _.filter(LISTS, { userId: parent.id });
       },
     },
   }),
@@ -86,7 +112,22 @@ const ListType = new graphql.GraphQLObjectType({
     user: {
       type: UserType,
       resolve(parent) {
-        return _.find(USERS_DATA, { id: parent.userId });
+        return _.find(USERS, { id: parent.userId });
+      },
+    },
+  }),
+});
+
+const NoteType = new graphql.GraphQLObjectType({
+  name: "NoteType",
+  description: "NoteType",
+  fields: () => ({
+    id: { type: graphql.GraphQLID },
+    note: { type: graphql.GraphQLString },
+    list: {
+      type: ListType,
+      resolve(parent) {
+        return _.find(LISTS, { id: parent.listId });
       },
     },
   }),
@@ -101,28 +142,41 @@ const RootQuery = new graphql.GraphQLObjectType({
       type: UserType,
       args: { id: { type: graphql.GraphQLID } },
       resolve(parent, args) {
-        return _.find(USERS_DATA, { id: args.id });
+        return _.find(USERS, { id: args.id });
       },
     },
     users: {
       type: new graphql.GraphQLList(UserType),
       resolve() {
-        return USERS_DATA;
+        return USERS;
       },
     },
 
-    // TODO: list, lists, note, notes
     list: {
       type: ListType,
       args: { id: { type: graphql.GraphQLID } },
       resolve(parent, args) {
-        return _.find(LISTS_DATA, { id: args.id });
+        return _.find(LISTS, { id: args.id });
       },
     },
     lists: {
       type: new graphql.GraphQLList(ListType),
       resolve() {
-        return LISTS_DATA;
+        return LISTS;
+      },
+    },
+    // TODO: notes
+    note: {
+      type: NoteType,
+      args: { id: { type: graphql.GraphQLID } },
+      resolve(parent, args) {
+        return _.find(NOTES, { id: args.id });
+      },
+    },
+    notes: {
+      type: new graphql.GraphQLList(NoteType),
+      resolve() {
+        return NOTES;
       },
     },
   },
