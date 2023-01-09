@@ -68,9 +68,31 @@ const UserType = new graphql.GraphQLObjectType({
     id: { type: graphql.GraphQLID },
     name: { type: graphql.GraphQLString },
     age: { type: graphql.GraphQLInt },
+    lists: {
+      type: new graphql.GraphQLList(ListType),
+      resolve(parent) {
+        return _.filter(LISTS_DATA, { userId: parent.id });
+      },
+    },
   }),
 });
 
+const ListType = new graphql.GraphQLObjectType({
+  name: "List",
+  description: "ListType",
+  fields: () => ({
+    id: { type: graphql.GraphQLID },
+    name: { type: graphql.GraphQLString },
+    user: {
+      type: UserType,
+      resolve(parent) {
+        return _.find(USERS_DATA, { id: parent.userId });
+      },
+    },
+  }),
+});
+
+// Root Query
 const RootQuery = new graphql.GraphQLObjectType({
   name: "RootQuery",
   description: "RootQuery",
@@ -90,6 +112,19 @@ const RootQuery = new graphql.GraphQLObjectType({
     },
 
     // TODO: list, lists, note, notes
+    list: {
+      type: ListType,
+      args: { id: { type: graphql.GraphQLID } },
+      resolve(parent, args) {
+        return _.find(LISTS_DATA, { id: args.id });
+      },
+    },
+    lists: {
+      type: new graphql.GraphQLList(ListType),
+      resolve() {
+        return LISTS_DATA;
+      },
+    },
   },
 });
 
