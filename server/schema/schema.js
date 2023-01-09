@@ -1,8 +1,9 @@
 const graphql = require("graphql");
 const _ = require("lodash");
+const { v4 } = require("uuid");
 
 // Dummy data
-const USERS = [
+let users = [
   {
     id: "1",
     name: "Nick",
@@ -30,7 +31,7 @@ const USERS = [
   },
 ];
 
-const LISTS = [
+let lists = [
   {
     id: "1",
     name: "Shopping",
@@ -58,7 +59,7 @@ const LISTS = [
   },
 ];
 
-const NOTES = [
+let notes = [
   {
     id: "1",
     note: "Buy a jacket",
@@ -97,7 +98,7 @@ const UserType = new graphql.GraphQLObjectType({
     lists: {
       type: new graphql.GraphQLList(ListType),
       resolve(parent) {
-        return _.filter(LISTS, { userId: parent.id });
+        return _.filter(lists, { userId: parent.id });
       },
     },
   }),
@@ -112,7 +113,13 @@ const ListType = new graphql.GraphQLObjectType({
     user: {
       type: UserType,
       resolve(parent) {
-        return _.find(USERS, { id: parent.userId });
+        return _.find(users, { id: parent.userId });
+      },
+    },
+    notes: {
+      type: NoteType,
+      resolve(parent) {
+        return _.filter(notes, { listId: parent.id });
       },
     },
   }),
@@ -127,7 +134,7 @@ const NoteType = new graphql.GraphQLObjectType({
     list: {
       type: ListType,
       resolve(parent) {
-        return _.find(LISTS, { id: parent.listId });
+        return _.find(lists, { id: parent.listId });
       },
     },
   }),
@@ -142,13 +149,13 @@ const RootQuery = new graphql.GraphQLObjectType({
       type: UserType,
       args: { id: { type: graphql.GraphQLID } },
       resolve(parent, args) {
-        return _.find(USERS, { id: args.id });
+        return _.find(users, { id: args.id });
       },
     },
     users: {
       type: new graphql.GraphQLList(UserType),
       resolve() {
-        return USERS;
+        return users;
       },
     },
 
@@ -156,35 +163,60 @@ const RootQuery = new graphql.GraphQLObjectType({
       type: ListType,
       args: { id: { type: graphql.GraphQLID } },
       resolve(parent, args) {
-        return _.find(LISTS, { id: args.id });
+        return _.find(lists, { id: args.id });
       },
     },
     lists: {
       type: new graphql.GraphQLList(ListType),
       resolve() {
-        return LISTS;
+        return lists;
       },
     },
-    // TODO: notes
+
     note: {
       type: NoteType,
       args: { id: { type: graphql.GraphQLID } },
       resolve(parent, args) {
-        return _.find(NOTES, { id: args.id });
+        return _.find(notes, { id: args.id });
       },
     },
     notes: {
       type: new graphql.GraphQLList(NoteType),
       resolve() {
-        return NOTES;
+        return notes;
       },
     },
   },
 });
 
 // Mutations
-// Add user, lists, notes mutations
+const Mutation = new graphql.GraphQLObjectType({
+  name: "Mutation",
+  description: "Mutation",
+  fields: {
+    createUser: {
+      type: UserType,
+      args: {
+        name: { type: graphql.GraphQLString },
+        age: { type: graphql.GraphQLInt },
+      },
+      resolve(parent, args) {
+        let new_user = {
+          id: v4(),
+          name: args.name,
+          age: args.age,
+        };
+
+        users.push(new_user);
+
+        return new_user;
+      },
+    },
+    // TODO:  Add lists, notes mutations  and configure uuid to use incremental numbers
+  },
+});
 
 module.exports = new graphql.GraphQLSchema({
   query: RootQuery,
+  mutation: Mutation,
 });
