@@ -1,6 +1,6 @@
 const graphql = require("graphql");
 const _ = require("lodash");
-const { v4 } = require("uuid");
+const { v4: uuidv4 } = require("uuid");
 
 // Dummy data
 let users = [
@@ -8,26 +8,31 @@ let users = [
     id: "1",
     name: "Nick",
     age: 15,
+    email: "nick@gmail.com",
   },
   {
     id: "2",
     name: "George",
     age: 45,
+    email: "george@gmail.com",
   },
   {
     id: "3",
     name: "Andrew",
     age: 32,
+    email: "andrew@gmail.com",
   },
   {
     id: "4",
     name: "Maria",
     age: 18,
+    email: "maria@gmail.com",
   },
   {
     id: "5",
     name: "Athina",
     age: 27,
+    email: "athina@gmail.com",
   },
 ];
 
@@ -95,6 +100,8 @@ const UserType = new graphql.GraphQLObjectType({
     id: { type: graphql.GraphQLID },
     name: { type: graphql.GraphQLString },
     age: { type: graphql.GraphQLInt },
+    email: { type: graphql.GraphQLString },
+
     lists: {
       type: new graphql.GraphQLList(ListType),
       resolve(parent) {
@@ -199,20 +206,41 @@ const Mutation = new graphql.GraphQLObjectType({
       args: {
         name: { type: graphql.GraphQLString },
         age: { type: graphql.GraphQLInt },
+        email: { type: new graphql.GraphQLNonNull(graphql.GraphQLString) },
       },
       resolve(parent, args) {
         let new_user = {
-          id: v4(),
+          id: uuidv4(),
           name: args.name,
           age: args.age,
+          email: args.email,
         };
 
-        users.push(new_user);
+        if (_.find(users, { email: args.email }))
+          return new Error(`Email already exists.`);
 
+        users.push(new_user);
         return new_user;
       },
     },
-    // TODO:  Add lists, notes mutations  and configure uuid to use incremental numbers
+    deleteUser: {
+      type: graphql.GraphQLString,
+      args: {
+        id: { type: new graphql.GraphQLNonNull(graphql.GraphQLID) },
+      },
+      resolve(parent, args) {
+        if (!_.find(users, { id: args.id }))
+          return new Error("User doesn't exist.");
+
+        const user = _.find(users, { id: args.id });
+
+        const index = users.indexOf(user);
+
+        users.splice(index, 1);
+
+        return `User ${user.name} deleted successfully!`;
+      },
+    },
   },
 });
 
