@@ -67,27 +67,32 @@ let lists = [
 let notes = [
   {
     id: "1",
-    note: "Buy a jacket",
+    title: "Buy a jacket",
+    description: "Hello world!",
     listId: "1",
   },
   {
     id: "2",
-    note: "Do the laundry",
+    title: "Do the laundry",
+    description: "Hello world!",
     listId: "2",
   },
   {
     id: "3",
-    note: "Deploy the project",
+    title: "Deploy the project",
+    description: "Hello world!",
     listId: "3",
   },
   {
     id: "4",
-    note: "Do the laundry",
+    title: "Do the laundry",
+    description: "Hello world!",
     listId: "4",
   },
   {
     id: "5",
-    note: "Complete biology homework",
+    title: "Complete biology homework",
+    description: "Hello world!",
     listId: "5",
   },
 ];
@@ -124,7 +129,7 @@ const ListType = new graphql.GraphQLObjectType({
       },
     },
     notes: {
-      type: NoteType,
+      type: new graphql.GraphQLList(NoteType),
       resolve(parent) {
         return _.filter(notes, { listId: parent.id });
       },
@@ -136,8 +141,10 @@ const NoteType = new graphql.GraphQLObjectType({
   name: "NoteType",
   description: "NoteType",
   fields: () => ({
-    id: { type: graphql.GraphQLID },
-    note: { type: graphql.GraphQLString },
+    id: { type: new graphql.GraphQLNonNull(graphql.GraphQLID) },
+    title: { type: graphql.GraphQLString },
+    description: { type: graphql.GraphQLString },
+    listId: { type: new graphql.GraphQLNonNull(graphql.GraphQLID) },
     list: {
       type: ListType,
       resolve(parent) {
@@ -209,7 +216,7 @@ const Mutation = new graphql.GraphQLObjectType({
         email: { type: new graphql.GraphQLNonNull(graphql.GraphQLString) },
       },
       resolve(parent, args) {
-        let new_user = {
+        let newUser = {
           id: uuidv4(),
           name: args.name,
           age: args.age,
@@ -219,8 +226,8 @@ const Mutation = new graphql.GraphQLObjectType({
         if (_.find(users, { email: args.email }))
           return new Error(`Email already exists.`);
 
-        users.push(new_user);
-        return new_user;
+        users.push(newUser);
+        return newUser;
       },
     },
     deleteUser: {
@@ -229,16 +236,81 @@ const Mutation = new graphql.GraphQLObjectType({
         id: { type: new graphql.GraphQLNonNull(graphql.GraphQLID) },
       },
       resolve(parent, args) {
-        if (!_.find(users, { id: args.id }))
-          return new Error("User doesn't exist.");
+        const newUser = _.find(users, { id: args.id });
 
-        const user = _.find(users, { id: args.id });
+        if (!newUser)
+          return new Error(`User with id ${args.id} doesn't exist.`);
 
-        const index = users.indexOf(user);
+        const index = users.indexOf(newUser);
 
         users.splice(index, 1);
 
-        return `User ${user.name} deleted successfully!`;
+        return `User ${newUser.name} deleted successfully!`;
+      },
+    },
+    createList: {
+      type: ListType,
+      args: {
+        name: { type: graphql.GraphQLString },
+        userId: { type: new graphql.GraphQLNonNull(graphql.GraphQLID) },
+      },
+      resolve(parent, args) {
+        if (_.find(lists, { name: args.name }))
+          return new Error("List already exists.");
+        else if (!_.find(users, { id: args.userId }))
+          return new Error(`User doesn't exist.`);
+
+        const newList = {
+          id: uuidv4(),
+          name: args.name,
+          userId: args.userId,
+        };
+
+        lists.push(newList);
+
+        return newList;
+      },
+    },
+    deleteList: {
+      type: graphql.GraphQLString,
+      args: {
+        id: { type: new graphql.GraphQLNonNull(graphql.GraphQLID) },
+      },
+      resolve(parent, args) {
+        const list = _.find(lists, { id: args.id });
+        if (!list) {
+          return new Error(`List with id ${args.id} doesn't exist.`);
+        }
+
+        const index = lists.indexOf(list);
+        lists.splice(index, 1);
+
+        return "List deleted successfully";
+      },
+    },
+    createNote: {
+      type: NoteType,
+      args: {
+        title: { type: graphql.GraphQLString },
+        description: { type: graphql.GraphQLString },
+        listId: { type: new graphql.GraphQLNonNull(graphql.GraphQLID) },
+      },
+      resolve(parent, args) {
+        const newNote = {
+          id: uuidv4(),
+          title: args.title,
+          description: args.description,
+          listId: args.listId,
+        };
+
+        if (_.find(notes, { title: args.title, listId: args.listId }))
+          return new Error(`Note exists in list with id: ${args.listId}`);
+        else if (!_.find(lists, { id: args.listId }))
+          return new Error(`List with id: ${agrs.id} doesn't exist.`);
+
+        notes.push(newNote);
+
+        return newNote;
       },
     },
   },
