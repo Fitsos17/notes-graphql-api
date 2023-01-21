@@ -313,6 +313,22 @@ const Mutation = new graphql.GraphQLObjectType({
         return newNote;
       },
     },
+    deleteNote: {
+      type: graphql.GraphQLString,
+      args: {
+        id: { type: new graphql.GraphQLNonNull(graphql.GraphQLID) },
+      },
+      resolve(parent, args) {
+        const note = _.find(notes, { id: args.id });
+        if (!note) return new Error("Note doesn't exist");
+
+        const index = notes.indexOf(note);
+
+        notes.splice(index, 1);
+
+        return "Note deleted successfully";
+      },
+    },
   },
 });
 
